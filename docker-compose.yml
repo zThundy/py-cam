@@ -1,8 +1,14 @@
 services:
   app:
+    container_name: esp32s3-cam-server
     image: esp32s3-cam-server
     ports:
       - 3344:3344
       - 4512:4512
     environment:
       FLASKENV: "PROD"
+    volumes:
+      - images_data:/app/images
+
+volumes:
+  images_data:
