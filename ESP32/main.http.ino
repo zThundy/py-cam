@@ -7,8 +7,8 @@
 
 // ================= WIFI =================
 
-const char* ssid = "MartinRouterKing-IoT";
-const char* password = "iot13062000!";
+const char* ssid = "********";
+const char* password = "********";
 int connectionTries = 0;
 
 

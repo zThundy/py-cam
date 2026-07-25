@@ -9,8 +9,8 @@
 
 // ================= WIFI =================
 
-const char* ssid = "MartinRouterKing-IoT";
-const char* password = "iot13062000!";
+const char* ssid = "********";
+const char* password = "********";
 
 WebSocketsClient webSocket;
 // #define CHUNK_SIZE 4096
