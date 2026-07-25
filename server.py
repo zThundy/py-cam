@@ -11,6 +11,8 @@ import subprocess
 import socket
 import time
 import logging
+import os
+from waitress import serve
 
 app = Flask(__name__)
 sock = Sock(app)
@@ -213,4 +215,7 @@ if __name__=="__main__":
   thread_beacon = threading.Thread(target=avvia_multicast_beacon, daemon=True)
   thread_beacon.start()
 
-  app.run(host="0.0.0.0", port=4512, threaded=True, debug=True)
+  if os.environ['ENV'] == "PROD":
+    serve(app, host="0.0.0.0", port=8080)
+  else:
+    app.run(host="0.0.0.0", port=4512, threaded=True, debug=True)

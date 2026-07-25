@@ -4,3 +4,5 @@ services:
     ports:
       - 3344:3344
       - 4512:4512
+    environment:
+      ENV: "PROD"
