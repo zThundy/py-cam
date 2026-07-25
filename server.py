@@ -16,8 +16,6 @@ app = Flask(__name__)
 sock = Sock(app)
 app.logger.setLevel(logging.ERROR)
 
-app.config.from_envvar('ENVIRONMENT')
-
 BASE_DIR = Path(__file__).parent
 IMAGE_DIR = BASE_DIR / "images"
 IMAGE_DIR.mkdir(exist_ok=True)

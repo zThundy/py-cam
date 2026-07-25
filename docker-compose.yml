@@ -1,6 +1,6 @@
 services:
   app:
-    image: zthundy/espcam
+    image: esp32s3-cam-server
     ports:
       - 3344:3344
       - 4512:4512
