@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>CCTV Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #000;
+      --gray: #333;
+      --text: #fff;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--background);
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: 100vw;
+      height: 100vh;
+      padding: 12px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+    }
+
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .tile {
+      background: #333;
+      border: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .tile-header {
+      padding: 8px;
+      font-weight: bold;
+    }
+
+    .tile-body {
+      flex: 1;
+      min-height: 0;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .placeholder {
+      color: #aaa;
+    }
+
+    .tile-footer {
+      padding: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff2a;
+      margin-right: 5px;
+    }
+
+    .offline {
+      background: red;
+    }
+
+    @media(max-width:980px) {
+      .grid {
+        grid-template-columns: 100%;
+      }
+    }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <h1>
+      ESP CAM Monitor
+    </h1>
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const cameras = new Map();
+
+    function createTile(id) {
+      let tile = document.createElement("div");
+
+      tile.className = "tile";
+      tile.id = "tile-" + id;
+
+      tile.innerHTML = `
+        <div class="tile-header">
+          Camera ${id}
+        </div>
+
+        <div class="tile-body">
+          <img id="img-${id}">
+          <div class="placeholder">
+            Nessuna immagine
+          </div>
+        </div>
+
+        <div class="tile-footer">
+          <span class="date"></span>
+          <span class="temp"></span>
+        </div>
+      `;
+      grid.appendChild(tile);
+      tile.onclick = () => {
+        downloadVideo(id);
+      };
+
+      return tile;
+    }
+
+    function updateCamera(data) {
+      let id = data.device_id;
+      let tile = cameras.get(id);
+
+      if (!tile) {
+        tile = createTile(id);
+        cameras.set(id, tile);
+      }
+
+      let img = tile.querySelector("img");
+      let placeholder = tile.querySelector(".placeholder");
+
+      let header = tile.querySelector(".tile-header");
+      let date = tile.querySelector(".date");
+      let temp = tile.querySelector(".temp");
+
+      let timestamp = new Date(data.timestamp);
+      let age = (Date.now() - timestamp.getTime()) / 1000;
+      let offline = age > 60;
+
+      header.innerHTML = `
+        <span class="live-dot ${offline ? 'offline' : ''}"></span>
+        Camera ${id}
+      `;
+
+      img.src = "/photo/" + encodeURIComponent(id) + "?t=" + Date.now();
+
+      img.style.display = "block";
+      placeholder.style.display = "none";
+      date.textContent = timestamp.toLocaleString();
+
+      temp.textContent = "Temp: " + (data.temp || "0") + "°C";
+    }
+
+    let ws;
+    function connect() {
+      const protocol = window.location.protocol === "https:" ? "wss://": "ws://";
+      ws = new WebSocket(protocol + window.location.host + "/stream");
+      ws.onopen = () => { console.log("WebSocket connected"); };
+      ws.onmessage = (event) => {
+        try {
+          let data = JSON.parse(event.data);
+          updateCamera(data);
+        } catch (e) {
+          console.log("JSON error", e);
+        }
+      };
+
+      ws.onerror = (e) => { console.log("WS error", e); };
+      ws.onclose = () => {
+        console.log("WS closed reconnect...");
+        setTimeout(connect, 3000);
+      };
+    }
+
+    function downloadVideo(id) {
+      fetch("/download-video/" + encodeURIComponent(id))
+        .then(r => {
+          if (!r.ok) throw Error("video error");
+          return r.blob();
+        })
+        .then(blob => {
+          let url = URL.createObjectURL(blob);
+          let a = document.createElement("a");
+          a.href = url;
+          a.download = id + "_" + Date.now() + ".mp4";
+          a.click();
+
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    }
+    connect();
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+services:
+  app:
+    image: zthundy/espcam
+    ports:
+      - 3344:3344
+      - 4512:4512
