@@ -215,9 +215,9 @@ if __name__=="__main__":
   thread_beacon = threading.Thread(target=avvia_multicast_beacon, daemon=True)
   thread_beacon.start()
 
-  print(f"Running in {os.environ['ENV']}")
+  print(f"Running in {os.environ['FLASKENV']}")
 
-  if os.environ['ENV'] == "PROD":
+  if os.environ['FLASKENV'] == "PROD":
     serve(app, host="0.0.0.0", port=8080)
   else:
     app.run(host="0.0.0.0", port=4512, threaded=True, debug=True)
