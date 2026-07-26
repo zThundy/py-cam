@@ -7,7 +7,13 @@ services:
       - 3344:3344
       - 4512:4512
     environment:
-      FLASKENV: "PROD"
+      LOGLEVEL: "DEBUG"
+      LOGPATH: "logs"
+      IMAGESPATH: "images"
+      MAXIMAGES: 1200
+      SERVICE_PORT: 4512
+      MULTICASTGROUP: '239.1.2.3'
+      MULTICASTPORT: 3344
     volumes:
       - images_data:/app/images
 
