@@ -2,6 +2,7 @@ services:
   app:
     container_name: esp32s3-cam-server
     image: esp32s3-cam-server
+    restart: unless-stopped
     ports:
       - 3344:3344
       - 4512:4512
