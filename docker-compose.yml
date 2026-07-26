@@ -16,6 +16,8 @@ services:
       MULTICASTPORT: 3344
     volumes:
       - images_data:/app/images
+      - logs_data:/app/logs
 
 volumes:
   images_data:
+  logs_data:

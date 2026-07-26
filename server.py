@@ -30,7 +30,8 @@ MULTICAST_PORT = os.getenv("MULTICASTPORT") or 3344
 MESSAGE = b"SERVER_ALIVE"
 
 def defineLogsLevel():
-  match os.getenv("LOGLEVEL") or "DEBUG":
+  logLevel = os.getenv("LOGLEVEL") or "DEBUG"
+  match logLevel:
     case "DEBUG":
       return logging.DEBUG
     case "WARNING":
@@ -39,6 +40,8 @@ def defineLogsLevel():
       return logging.INFO
     case "ERROR":
       return logging.ERROR
+    case _:
+      return logging.INFO
 
 logBaseDir = os.getenv("LOGPATH") or "logs"
 
@@ -77,7 +80,7 @@ def avvia_multicast_beacon():
   
   while True:
     try:
-      sock.sendto(MESSAGE, (MULTICAST_GROUP, MULTICAST_PORT))
+      sock.sendto(MESSAGE, (MULTICAST_GROUP, int(MULTICAST_PORT)))
       time.sleep(3)
     except Exception as e:
       logger.error(f"Multicast error: {e}")
