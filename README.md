@@ -47,6 +47,8 @@ Change the `environment` section with you preferred configurations.
 
 Keep in mind that changing the ports will also impact the configuration in your ESP code, so chage them if you know what to do next since I will not bother to explain what to do.
 
+***Important:*** since the docker installation is using `network_mode: host` for multicast support, remember to open the ports (only for local network) on the server you are installing the image to.
+
 ```yaml
     environment:
       LOGLEVEL: "INFO"
