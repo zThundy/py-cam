@@ -78,6 +78,8 @@ Regarding the hardware, I have tested the software on these modules
 - [Amazon.it](https://www.amazon.it/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0C69FFVHH?th=1)
 - [Amazon.com](https://www.amazon.com/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0C69FFVHH?th=1)
 
+I have found that the included antenna is a bit shit. I managed to fix it adding some Tin Foil and attaching it to the sticky antenna. Doing that fixed my issue `¯\_(ツ)_/¯`
+
 To flash, connect the ESP to your computer and make sure the board is recognized by the ArduinoIDE, if not you will have to download the esp32 board list by going into **File > Preferences > Additional boards** and add the following url
 ```
 https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
@@ -105,6 +107,7 @@ unsigned int servicePort = 4512;
 - https for secure website and connection
 - wss same as above
 - SQL cause storing jpeg on server is highly inefficient
+- 3D Printable enclosure (WIP)
 - Something else i can't think of right now
 
 ## Contributing
