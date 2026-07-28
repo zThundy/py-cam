@@ -10,6 +10,8 @@ It is recommended that you connect the ESPs on a separate IoT network (if your r
 
 ## Docker installation (recommended)
 
+Docker repo [here](https://hub.docker.com/repository/docker/zthundy/esp32s3-cam-server/general)
+
 The docker-compose file will install everything for you. If you know how a docker-compose.yml and a dockerfile work, good for you :)
 
 If not, then create a folder and copy the docker-file to it.
