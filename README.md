@@ -1,6 +1,6 @@
 # PyCam
 
-PyCam is a self-hosted CCTV system designed around ESP32S3 cam modules.
+PyCam is a self-hosted CCTV system designed around **ESP32S3 SENSE cam** modules.
 
 The project is very much a work in progress, so don't expect amazing code or super cool features...
 
@@ -73,10 +73,10 @@ For the manual installation:
 Download the ArduinoIDE from [here](https://www.arduino.cc/en/software/).
 
 Regarding the hardware, I have tested the software on these modules
-- [Seeed Studio](https://www.seeedstudio.com/XIAO-ESP32S3-p-5627.html)
-- [Aliexpress](https://www.aliexpress.com/item/1005005543738460.html)
-- [Amazon.it](https://www.amazon.it/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0BYSB66S5?th=1)
-- [Amazon.com](https://www.amazon.com/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0BYSB66S5?th=1)
+- [Seeed Studio](https://www.seeedstudio.com/XIAO-ESP32S3-Sense-p-5639.html)
+- [Aliexpress](https://www.aliexpress.us/item/3256805357906723.html?spm=a2g0o.detail.pcDetailTopMoreOtherSeller.1.281dUTArUTArwr&gps-id=pcDetailTopMoreOtherSeller&scm=1007.40050.354490.0&scm_id=1007.40050.354490.0&scm-url=1007.40050.354490.0&pvid=eb580d60-7d31-46eb-a886-2254db7bd82d&_t=gps-id%3ApcDetailTopMoreOtherSeller%2Cscm-url%3A1007.40050.354490.0%2Cpvid%3Aeb580d60-7d31-46eb-a886-2254db7bd82d%2Ctpp_buckets%3A668%232846%238116%232002&pdp_ext_f=%7B%22order%22%3A%22805%22%2C%22eval%22%3A%221%22%2C%22sceneId%22%3A%2230050%22%2C%22fromPage%22%3A%22recommend%22%7D&pdp_npi=6%40dis%21GBP%2117.70%2113.27%21%21%2122.85%2117.13%21%402103810f17852271911181967e0f32%2112000047978847658%21rec%21GB%21%21ABXZ%211%210%21n_tag%3A-29910%3Bd%3A72a4d18%3Bm03_new_user%3A-29895%3BpisId%3A5000000212851917&utparam-url=scene%3ApcDetailTopMoreOtherSeller%7Cquery_from%3A%7Cx_object_id%3A1005005544221475%7C_p_origin_prod%3A&gatewayAdapt=glo2usa4itemAdapt)
+- [Amazon.it](https://www.amazon.it/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0C69FFVHH?th=1)
+- [Amazon.com](https://www.amazon.com/ESP32S3-2-4GHz-interfaccia-intelligenti-dispositivi-indossabili/dp/B0C69FFVHH?th=1)
 
 To flash, connect the ESP to your computer and make sure the board is recognized by the ArduinoIDE, if not you will have to download the esp32 board list by going into **File > Preferences > Additional boards** and add the following url
 ```
