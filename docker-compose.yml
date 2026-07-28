@@ -4,12 +4,6 @@ services:
     image: zthundy/esp32s3-cam-server
     restart: unless-stopped
 
-    # ports:
-    #   - "3344:3344/tcp"
-    #   - "3344:3344/udp"
-    #   - "4512:4512/tcp"
-    #   - "4512:4512/udp"
-
     network_mode: host
 
     user: "${UID}:${GID}"
