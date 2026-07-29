@@ -95,6 +95,21 @@
       background: red;
     }
 
+    .header {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .refresh {
+      font-size: 2rem;
+      font-weight: bold;
+      /* padding: 1rem; */
+      border: none;
+      background-color: var(--background);
+      cursor: pointer;
+    }
+
     @media(max-width:980px) {
       .grid {
         grid-template-columns: 100%;
@@ -103,16 +118,25 @@
   </style>
 
 </head>
+
 <body>
   <div class="container">
-    <h1>
-      ESP CAM Monitor
-    </h1>
+    <div class="header">
+      <h1>
+        ESP CAM Monitor
+      </h1>
+
+      <button class="refresh" id="refresh">
+        <!-- refresh icon -->
+         <span>↻</span>
+      </button>
+    </div>
     <div id="grid" class="grid"></div>
   </div>
 
   <script>
     const grid = document.getElementById("grid");
+    const refresh = document.getElementById("refresh");
     const cameras = new Map();
 
     function createTile(id) {
@@ -148,6 +172,7 @@
 
     function updateCamera(data) {
       let id = data.device_id;
+      console.log("Got data from server for device " + id);
       let tile = cameras.get(id);
 
       if (!tile) {
@@ -171,23 +196,28 @@
         Camera ${id}
       `;
 
-      img.src = "/photo/" + encodeURIComponent(id) + "?t=" + Date.now();
+      // img.src = "/photo/" + encodeURIComponent(id) + "?t=" + Date.now();
+      img.src = "data:image/jpeg;base64," + data.image;
+      // img.src = data.image;
 
       img.style.display = "block";
       placeholder.style.display = "none";
       date.textContent = timestamp.toLocaleString();
 
       temp.textContent = "Temp: " + (data.temp || "0") + "°C";
+      if (data.temp == "No data") temp.textContent = "No temperature data";
     }
 
     let ws;
     function connect() {
-      const protocol = window.location.protocol === "https:" ? "wss://": "ws://";
+      const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
       ws = new WebSocket(protocol + window.location.host + "/stream");
       ws.onopen = () => { console.log("WebSocket connected"); };
       ws.onmessage = (event) => {
         try {
+          console.log("Got data from websocket. " + new Date().toUTCString());
           let data = JSON.parse(event.data);
+          console.log("Parsed data", data)
           updateCamera(data);
         } catch (e) {
           console.log("JSON error", e);
@@ -220,7 +250,22 @@
           console.log(err);
         });
     }
+
+    refresh.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      fetch("/refresh")
+        .then((r) => {
+          if (!r.ok) throw Error("error while refreshing");
+          return r.json();
+        })
+        .then(json => {
+          console.log(json);
+        })
+    })
+
     connect();
   </script>
 </body>
+
 </html>

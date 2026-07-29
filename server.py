@@ -13,9 +13,16 @@ import socket
 import time
 import logging
 import os
+import base64
 
 app = Flask(__name__)
 sock = Sock(app)
+
+app.config['SOCK_SERVER_OPTIONS'] = {
+  # 1gb
+  'max_message_size': None,
+  'ping_interval': 25
+}
 
 BASE_DIR = Path(__file__).parent
 IMAGE_DIR = BASE_DIR / (os.getenv("IMAGESPATH") or "images")
@@ -24,6 +31,7 @@ MAX_IMAGES = os.getenv("MAXIMAGES") or 600
 
 clients = []
 clients_lock = threading.Lock()
+cameras = {}
 
 MULTICAST_GROUP = os.getenv("MULTICASTGROUP") or '239.1.2.3'
 MULTICAST_PORT = os.getenv("MULTICASTPORT") or 3344
@@ -86,7 +94,6 @@ def avvia_multicast_beacon():
       logger.error(f"Multicast error: {e}")
       time.sleep(5)
 
-cameras = {}
 
 def device_from_request():
   header = request.headers.get("X-Device-ID", "unknown")
@@ -95,7 +102,7 @@ def device_from_request():
 
 def device_dir(device):
   p = IMAGE_DIR / device
-  p.mkdir(exist_ok=True)
+  p.mkdir(exist_ok = True)
   return p
 
 def send_to_clients(message):
@@ -106,8 +113,8 @@ def send_to_clients(message):
       try:
         logger.debug("Message sent to clients via websocket")
         ws.send(json.dumps(message))
-      except:
-        logger.error("Found dead client while sending message.")
+      except Exception as e:
+        logger.error(f"Found dead client while sending message. Error: {e}")
         dead.append(ws)
     for ws in dead:
       logger.debug("Client died while sending message. Removing client from list of clients")
@@ -116,7 +123,7 @@ def send_to_clients(message):
 def cleanup(device):
   logger.debug("Trying to cleanup older files")
   folder = device_dir(device)
-  files = sorted(folder.glob("*.jpg"), key=lambda x:x.stat().st_mtime)
+  files = sorted(folder.glob("*.jpg"), key = lambda x:x.stat().st_mtime)
 
   logger.debug(f"About to remove {MAX_IMAGES - len(files)}")
 
@@ -135,20 +142,27 @@ def sendLastFrame():
   for path in os.listdir(IMAGE_DIR):
     device = path
     folder = device_dir(device)
-    files = sorted(folder.glob("*.jpg"), key=lambda x:x.stat().st_mtime)
+    files = sorted(folder.glob("*.jpg"), key = lambda x:x.stat().st_mtime)
 
     if len(files) > 0:
       last_file = files[-1]
-      info={
+      # print(last_file)
+      # with open(last_file, "rb") as image_file:
+      #   encoded_string = base64.b64encode(image_file.read())
+      # image file data to base64
+      image = base64.b64encode(last_file.read_bytes()).decode("utf-8")
+      info = {
         "device_id": device,
         "filename": last_file.name,
         "timestamp": datetime.fromtimestamp(last_file.stat().st_mtime).isoformat(),
-        "temp": "",
+        "temp": "No data",
+        "image": str(image)
       }
 
       count = cameras.get(device, {}).get("counter", 0)
       
       cameras[device] = { **info, "counter":count }
+      logger.debug("Sending last frame to clients")
       send_to_clients(info)
 
 
@@ -158,7 +172,6 @@ def stream(ws):
   with clients_lock:
     clients.append(ws)
   try:
-    sendLastFrame()
     while True:
       time.sleep(30)
   except:
@@ -178,7 +191,7 @@ def upload():
 
   device = device_from_request()
   folder = device_dir(device)
-  timestamp=datetime.now().isoformat()
+  timestamp = datetime.now().isoformat()
   logger.debug(f"Got upload request from client {device}")
 
   count = cameras.get(device, {}).get("counter", 0)
@@ -193,11 +206,14 @@ def upload():
   temp = request.headers.get("X-Device-TEMP", "")
   logger.debug(f"Device {device} temperature is {temp}")
 
+  # image to base64
+  image = base64.b64encode(data).decode("utf-8")
   info={
     "device_id": device,
     "filename": filename,
     "timestamp": timestamp,
     "temp": temp,
+    "image": str(image)
   }
 
   cameras[device] = { **info, "counter":count }
@@ -207,28 +223,33 @@ def upload():
   if count % 50 == 0:
     threading.Thread(target=cleanup, args=(device,), daemon=True).start()
 
-  return jsonify({ "status":"ok"})
+  return jsonify({ "status":"ok" })
 
-@app.get("/photo/<device>")
-def photo(device):
-  logger.debug(f"Got photo request for device {device}")
-  info = cameras.get(device)
+# @app.get("/photo/<device>")
+# def photo(device):
+#   logger.debug(f"Got photo request for device {device}")
+#   info = cameras.get(device)
 
-  if not info:
-    return "none", 404
+#   if not info:
+#     return "none", 404
 
-  path = device_dir(device) / info["filename"]
-  if not path.exists():
-    return "none", 404
+#   path = device_dir(device) / info["filename"]
+#   if not path.exists():
+#     return "none", 404
 
-  logger.debug(f"Sending image from device {device}")
-  return send_file(path, mimetype="image/jpeg")
-
+#   logger.debug(f"Sending image from device {device}")
+#   return send_file(path, mimetype="image/jpeg")
 
 @app.get("/")
 def index():
   logger.debug("Serving index to client.")
   return render_template("index.html")
+
+@app.get("/refresh")
+def refresh():
+  logger.debug("Received refresh request")
+  sendLastFrame()
+  return jsonify({ "status": "ok" })
 
 @app.get("/download-video/<device>")
 def video(device):
@@ -278,4 +299,4 @@ if __name__=="__main__":
   IPAddr = socket.gethostbyname(hostname)
 
   logger.info(f"Application is running on http://{IPAddr}:{port}")
-  app.run(host="0.0.0.0", port=port, threaded=True, debug=False)
+  app.run(host="0.0.0.0", port=port, threaded=True, debug=True)
