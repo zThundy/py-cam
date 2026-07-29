@@ -98,22 +98,6 @@ def device_dir(device):
   p.mkdir(exist_ok=True)
   return p
 
-@sock.route("/stream")
-def stream(ws):
-  logger.debug("Got /stream request. Adding ws client to clients list")
-  with clients_lock:
-    clients.append(ws)
-  try:
-    while True:
-      time.sleep(30)
-  except:
-    pass
-  finally:
-    with clients_lock:
-      if ws in clients:
-        logger.debug("Client is dead. Removing from clients list")
-        clients.remove(ws)
-
 def send_to_clients(message):
   logger.debug(f"About to send message to clients: {message}")
   dead = []
@@ -144,6 +128,46 @@ def cleanup(device):
       pass
 
     files.pop(0)
+
+# function to discover all images folder of clients and sending the last frame to the clients
+def sendLastFrame():
+  logger.debug("Trying to send last frame to clients")
+  for path in os.listdir(IMAGE_DIR):
+    device = path
+    folder = device_dir(device)
+    files = sorted(folder.glob("*.jpg"), key=lambda x:x.stat().st_mtime)
+
+    if len(files) > 0:
+      last_file = files[-1]
+      info={
+        "device_id": device,
+        "filename": last_file.name,
+        "timestamp": datetime.fromtimestamp(last_file.stat().st_mtime).isoformat(),
+        "temp": "",
+      }
+
+      count = cameras.get(device, {}).get("counter", 0)
+      
+      cameras[device] = { **info, "counter":count }
+      send_to_clients(info)
+
+
+@sock.route("/stream")
+def stream(ws):
+  logger.debug("Got /stream request. Adding ws client to clients list")
+  with clients_lock:
+    clients.append(ws)
+  try:
+    sendLastFrame()
+    while True:
+      time.sleep(30)
+  except:
+    pass
+  finally:
+    with clients_lock:
+      if ws in clients:
+        logger.debug("Client is dead. Removing from clients list")
+        clients.remove(ws)
 
 
 @app.post("/upload")
