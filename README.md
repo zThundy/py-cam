@@ -111,6 +111,7 @@ unsigned int servicePort = 4512;
 - SQL cause storing jpeg on server is highly inefficient
 - 3D Printable enclosure (WIP)
 - Something else i can't think of right now
+- Audio recording
 
 ## Contributing
 
