@@ -106,7 +106,6 @@ bool initCamera() {
 }
 
 // ================= INVIO FOTO =================
-
 String generateDeviceId() {
   String mac = WiFi.macAddress();
   mac.replace(":", "");
