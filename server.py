@@ -27,7 +27,7 @@ app.config['SOCK_SERVER_OPTIONS'] = {
 BASE_DIR = Path(__file__).parent
 IMAGE_DIR = BASE_DIR / (os.getenv("IMAGESPATH") or "images")
 IMAGE_DIR.mkdir(exist_ok=True)
-MAX_IMAGES = os.getenv("MAXIMAGES") or 600
+MAX_IMAGES = os.getenv("MAXIMAGES") or 1200
 
 clients = []
 clients_lock = threading.Lock()
@@ -83,6 +83,13 @@ app.logger.addHandler(flask_console_handler)
 
 def avvia_multicast_beacon():
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+  
+  hostname = socket.gethostname()
+  IPAddr = socket.gethostbyname(hostname)
+  fqdn = socket.getfqdn()
+  logger.debug(f"Local ip from socket is {IPAddr} with hostname {hostname} fqdn {fqdn}")
+
+  # sock.bind()
   sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
   logger.debug(f"Multicast broadcast running on {MULTICAST_GROUP}:{MULTICAST_PORT}")
   
@@ -106,7 +113,7 @@ def device_dir(device):
   return p
 
 def send_to_clients(message):
-  logger.debug(f"About to send message to clients: {message}")
+  logger.debug(f"About to send message to clients: {json.dumps(message)[:200]}...")
   dead = []
   with clients_lock:
     for ws in clients:
@@ -146,10 +153,6 @@ def sendLastFrame():
 
     if len(files) > 0:
       last_file = files[-1]
-      # print(last_file)
-      # with open(last_file, "rb") as image_file:
-      #   encoded_string = base64.b64encode(image_file.read())
-      # image file data to base64
       image = base64.b64encode(last_file.read_bytes()).decode("utf-8")
       info = {
         "device_id": device,
@@ -159,11 +162,23 @@ def sendLastFrame():
         "image": str(image)
       }
 
-      count = cameras.get(device, {}).get("counter", 0)
+      lastNumber = last_file.name.split(".jpg")[0]
+      logger.debug(f"Last number found is {lastNumber}")
+      count = cameras.get(device, {}).get("counter", lastNumber)
       
-      cameras[device] = { **info, "counter":count }
+      cameras[device] = { **info, "counter": count }
       logger.debug("Sending last frame to clients")
       send_to_clients(info)
+
+# def audio_receiver():
+#   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#   sock.bind(('0.0.0.0', 5005))
+
+#   while True:
+#     data, addr = sock.recvfrom(2048)
+
+#     with open('audio.pcm', 'ab') as f:
+#       f.write(data)
 
 
 @sock.route("/stream")
@@ -196,6 +211,18 @@ def upload():
 
   count = cameras.get(device, {}).get("counter", 0)
 
+  logger.debug(f"Counter from device {device} is {count}")
+  if count == 0:
+    try:
+      files = sorted(folder.glob("*.jpg"), key = lambda x:x.stat().st_mtime)
+      last_file = files[-1]
+      count = last_file.name.split(".jpg")[0]
+      logger.debug(f"Calculated count to {count}")
+      count = int(count)
+    except Exception as e:
+      logger.error(f"Exception while calculating counter '{e}'. Setting to 0")
+      count = 0
+
   count += 1
   filename = f"{count}.jpg"
   path = folder / filename
@@ -216,7 +243,7 @@ def upload():
     "image": str(image)
   }
 
-  cameras[device] = { **info, "counter":count }
+  cameras[device] = { **info, "counter": count }
 
   send_to_clients(info)
 
@@ -292,6 +319,9 @@ def video(device):
 if __name__=="__main__":
   thread_beacon = threading.Thread(target=avvia_multicast_beacon, daemon=True)
   thread_beacon.start()
+  
+  # thread_audio = threading.Thread(target=audio_receiver, daemon=True)
+  # thread_audio.start()
 
   port = os.getenv("SERVICE_PORT") or 4512
   

@@ -136,7 +136,7 @@
 
   <script>
     const grid = document.getElementById("grid");
-    const refresh = document.getElementById("refresh");
+    const refreshBtn = document.getElementById("refresh");
     const cameras = new Map();
 
     function createTile(id) {
@@ -231,6 +231,17 @@
       };
     }
 
+    function refresh() {
+      fetch("/refresh")
+        .then((r) => {
+          if (!r.ok) throw Error("error while refreshing");
+          return r.json();
+        })
+        .then(json => {
+          console.log(json);
+        })
+    }
+
     function downloadVideo(id) {
       fetch("/download-video/" + encodeURIComponent(id))
         .then(r => {
@@ -251,19 +262,13 @@
         });
     }
 
-    refresh.addEventListener("click", (e) => {
+    refreshBtn.addEventListener("click", (e) => {
       e.preventDefault();
-
-      fetch("/refresh")
-        .then((r) => {
-          if (!r.ok) throw Error("error while refreshing");
-          return r.json();
-        })
-        .then(json => {
-          console.log(json);
-        })
+      refresh();
     })
 
+    setInterval(refresh, 60 * 1000)
+    refresh();
     connect();
   </script>
 </body>
