@@ -22,7 +22,9 @@ RUN apt update && \
 # ENV PATH="/app/venv/bin:$PATH"
 # ENV FLASKENV="PROD"
 
+# multicast
 EXPOSE 3344
+# web server
 EXPOSE 4512
 
 CMD ["python", "server.py"]

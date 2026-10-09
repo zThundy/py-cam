@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CCTV Dashboard</title>
   <style>
     :root {
@@ -15,36 +16,39 @@
     html,
     body {
       width: 100%;
-      height: 100%;
+      min-height: 100%;
       margin: 0;
-      overflow: hidden;
       background: var(--background);
       color: white;
       font-family: Arial, sans-serif;
     }
 
     .container {
-      width: 100vw;
-      height: 100vh;
-      padding: 12px;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100svh;
+      padding: clamp(10px, 2vw, 20px);
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
     }
 
     h1 {
-      margin: 0 0 10px;
+      margin: 0;
+      font-size: clamp(1.25rem, 5vw, 2rem);
     }
 
     .grid {
       flex: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
-      gap: 12px;
-      overflow: auto;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+      align-content: start;
+      gap: clamp(10px, 2vw, 16px);
+      margin-top: 12px;
     }
 
     .tile {
+      min-width: 0;
       background: #333;
       border: 2px solid #333;
       display: flex;
@@ -58,8 +62,8 @@
     }
 
     .tile-body {
-      flex: 1;
-      min-height: 0;
+      min-height: 180px;
+      aspect-ratio: 16 / 9;
       background: black;
       display: flex;
       justify-content: center;
@@ -98,21 +102,35 @@
     .header {
       display: flex;
       width: 100%;
+      align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
     .refresh {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
+      color: var(--text);
       font-size: 2rem;
       font-weight: bold;
-      /* padding: 1rem; */
       border: none;
       background-color: var(--background);
       cursor: pointer;
     }
 
-    @media(max-width:980px) {
-      .grid {
-        grid-template-columns: 100%;
+    @media (max-width: 480px) {
+      .tile-body {
+        min-height: 150px;
+      }
+
+      .tile-footer {
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .date {
+        overflow-wrap: anywhere;
       }
     }
   </style>
@@ -188,11 +206,10 @@
       let temp = tile.querySelector(".temp");
 
       let timestamp = new Date(data.timestamp);
-      let age = (Date.now() - timestamp.getTime()) / 1000;
-      let offline = age > 60;
+      tile.dataset.timestamp = String(timestamp.getTime());
 
       header.innerHTML = `
-        <span class="live-dot ${offline ? 'offline' : ''}"></span>
+        <span class="live-dot"></span>
         Camera ${id}
       `;
 
@@ -206,6 +223,14 @@
 
       temp.textContent = "Temp: " + (data.temp || "0") + "°C";
       if (data.temp == "No data") temp.textContent = "No temperature data";
+      updateCameraStatus(tile);
+    }
+
+    function updateCameraStatus(tile) {
+      const timestamp = Number(tile.dataset.timestamp);
+      const age = Date.now() - timestamp;
+      const offline = !Number.isFinite(age) || age > 60_000 || age < -60_000;
+      tile.querySelector(".live-dot").classList.toggle("offline", offline);
     }
 
     let ws;
@@ -268,6 +293,9 @@
     })
 
     setInterval(refresh, 60 * 1000)
+    setInterval(() => {
+      cameras.forEach(updateCameraStatus);
+    }, 5000);
     refresh();
     connect();
   </script>

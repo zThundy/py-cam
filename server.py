@@ -3,7 +3,7 @@ from flask.logging import default_handler
 from flask_sock import Sock
 
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import threading
 import json
 import re
@@ -27,7 +27,7 @@ app.config['SOCK_SERVER_OPTIONS'] = {
 BASE_DIR = Path(__file__).parent
 IMAGE_DIR = BASE_DIR / (os.getenv("IMAGESPATH") or "images")
 IMAGE_DIR.mkdir(exist_ok=True)
-MAX_IMAGES = os.getenv("MAXIMAGES") or 1200
+MAX_IMAGES = int(os.getenv("MAXIMAGES")) or 1200
 
 clients = []
 clients_lock = threading.Lock()
@@ -51,35 +51,37 @@ def defineLogsLevel():
     case _:
       return logging.INFO
 
+logLevel = defineLogsLevel()
 logBaseDir = os.getenv("LOGPATH") or "logs"
 
-app.logger.removeHandler(default_handler)
 logger = logging.getLogger('app')
-logger.setLevel(defineLogsLevel())
-app.logger.setLevel(defineLogsLevel())
+flask_logger = logging.getLogger(__name__)
+logger.setLevel(logLevel)
+flask_logger.setLevel(logLevel)
 
 formatter = logging.Formatter('[%(levelname)s] - (%(asctime)s) - %(message)s')
 
 file_handler = logging.FileHandler(BASE_DIR / logBaseDir / 'main.log')
-file_handler.setLevel(defineLogsLevel())
+file_handler.setLevel(logLevel)
 file_handler.setFormatter(formatter)
 
 console_handler = logging.StreamHandler()
-console_handler.setLevel(defineLogsLevel())
+console_handler.setLevel(logLevel)
 console_handler.setFormatter(formatter)
 
 flask_file_handler = logging.FileHandler(BASE_DIR / logBaseDir / 'flask.log')
-flask_file_handler.setLevel(defineLogsLevel())
+flask_file_handler.setLevel(logLevel)
 flask_file_handler.setFormatter(formatter)
 
 flask_console_handler = logging.StreamHandler()
-flask_console_handler.setLevel(defineLogsLevel())
+flask_console_handler.setLevel(logLevel)
 flask_console_handler.setFormatter(formatter)
 
+flask_logger.removeHandler(default_handler)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
-app.logger.addHandler(flask_file_handler)
-app.logger.addHandler(flask_console_handler)
+flask_logger.addHandler(flask_file_handler)
+flask_logger.addHandler(flask_console_handler)
 
 def avvia_multicast_beacon():
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -157,7 +159,7 @@ def sendLastFrame():
       info = {
         "device_id": device,
         "filename": last_file.name,
-        "timestamp": datetime.fromtimestamp(last_file.stat().st_mtime).isoformat(),
+        "timestamp": datetime.fromtimestamp(last_file.stat().st_mtime, timezone.utc).isoformat(),
         "temp": "No data",
         "image": str(image)
       }
@@ -206,7 +208,7 @@ def upload():
 
   device = device_from_request()
   folder = device_dir(device)
-  timestamp = datetime.now().isoformat()
+  timestamp = datetime.now(timezone.utc).isoformat()
   logger.debug(f"Got upload request from client {device}")
 
   count = cameras.get(device, {}).get("counter", 0)
@@ -327,6 +329,8 @@ if __name__=="__main__":
   
   hostname = socket.gethostname()
   IPAddr = socket.gethostbyname(hostname)
+
+  logger.debug(f"Log handlers {flask_logger.handlers}")
 
   logger.info(f"Application is running on http://{IPAddr}:{port}")
   app.run(host="0.0.0.0", port=port, threaded=True, debug=True)
